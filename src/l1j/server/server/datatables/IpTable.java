@@ -38,7 +38,9 @@ public class IpTable {
 	private IpTable() {
 		if (!isInitialized) {
 			_banip = Lists.newList();
+			_whitelistIp = Lists.newList();
 			getIpTable();
+			getWhiteListIpTable();
 		}
 	}
 
@@ -71,7 +73,7 @@ public class IpTable {
 				String reip = BanIpAddress.substring(0, fStarindex);
 				// 抓得Banip表單內ip在*號前的子字串 xxx.xxx||xxx.xxx.xxx
 				String newaddress = s.substring(0, fStarindex);
-				if (newaddress.equalsIgnoreCase(reip)) {
+				if (newaddress.equalsIgnoreCase(reip) && !_whitelistIp.contains(s)) {
 					return true;
 				}
 			} else {
@@ -96,6 +98,32 @@ public class IpTable {
 
 			while (rs.next()) {
 				_banip.add(rs.getString(1));
+			}
+
+			isInitialized = true;
+
+		} catch (SQLException e) {
+			_log.log(Level.SEVERE, e.getLocalizedMessage(), e);
+		} finally {
+			SQLUtil.close(rs);
+			SQLUtil.close(pstm);
+			SQLUtil.close(con);
+		}
+	}
+	
+	public void getWhiteListIpTable() {
+		Connection con = null;
+		PreparedStatement pstm = null;
+		ResultSet rs = null;
+		try {
+
+			con = L1DatabaseFactory.getInstance().getConnection();
+			pstm = con.prepareStatement("SELECT * FROM whitelist_ip");
+
+			rs = pstm.executeQuery();
+
+			while (rs.next()) {
+				_whitelistIp.add(rs.getString(1));
 			}
 
 			isInitialized = true;
@@ -133,6 +161,8 @@ public class IpTable {
 	private static Logger _log = Logger.getLogger(IpTable.class.getName());
 
 	private static List<String> _banip;
+	
+	private static List<String> _whitelistIp;
 
 	public static boolean isInitialized;
 
